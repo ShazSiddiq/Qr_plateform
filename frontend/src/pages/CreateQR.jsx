@@ -223,6 +223,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { QrCode, Link as LinkIcon, Palette } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const CreateQR = () => {
   const [formData, setFormData] = useState({
@@ -257,26 +258,29 @@ const CreateQR = () => {
         }
       });
       
+      toast.success('QR Code created successfully!');
       navigate('/qr-codes');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create QR code');
+      const errorMsg = err.response?.data?.message || 'Failed to create QR code';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
           Create QR Code
         </h1>
-        <p className="text-gray-600 mt-2">Generate a dynamic QR code with custom styling</p>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Generate a dynamic QR code with custom styling</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
         {/* Form Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
               <p className="text-red-700 text-sm">{error}</p>
@@ -382,7 +386,7 @@ const CreateQR = () => {
         </div>
 
         {/* Preview Section */}
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8">
           <h3 className="text-xl font-bold text-gray-900 mb-6">Preview</h3>
           
           <div className="bg-white rounded-xl p-8 shadow-inner flex items-center justify-center" style={{ minHeight: '400px' }}>
@@ -431,6 +435,29 @@ const CreateQR = () => {
           </div>
         </div>
       </div>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            borderRadius: '12px',
+            padding: '16px',
+            fontSize: '14px',
+          },
+          success: {
+            style: {
+              background: '#10B981',
+            },
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+            },
+          },
+        }}
+      />
     </div>
   );
 };

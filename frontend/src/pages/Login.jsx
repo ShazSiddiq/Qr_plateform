@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { Mail, Phone, Lock, QrCode } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const Login = () => {
   const [loginMethod, setLoginMethod] = useState('email');
@@ -38,6 +39,7 @@ const Login = () => {
       });
       setOtpSent(true);
       setError('');
+      toast.success('OTP sent successfully!');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
     } finally {
@@ -57,7 +59,8 @@ const Login = () => {
         otp: formData.otp
       });
       
-      login(response.data.token, response.data.user);
+      login(response.data.accessToken, response.data.user);
+      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid OTP');
@@ -77,7 +80,8 @@ const Login = () => {
         password: formData.password
       });
       
-      login(response.data.token, response.data.user);
+      login(response.data.accessToken, response.data.user);
+      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials');
@@ -87,11 +91,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <QrCode className="mx-auto h-16 w-16 text-purple-600" />
-          <h2 className="mt-6 text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <QrCode className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-purple-600" />
+          <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Welcome Back
           </h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -99,7 +103,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
               <p className="text-red-700 text-sm">{error}</p>
@@ -107,7 +111,7 @@ const Login = () => {
           )}
 
           {!useOTP ? (
-            <form onSubmit={handlePasswordLogin} className="space-y-6">
+            <form onSubmit={handlePasswordLogin} className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -147,7 +151,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+                className="w-full py-2 sm:py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg text-sm sm:text-base"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
@@ -272,6 +276,7 @@ const Login = () => {
           </p>
         </div>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 };

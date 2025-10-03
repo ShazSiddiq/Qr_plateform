@@ -14,38 +14,65 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
 
   useEffect(() => {
-    if (token) {
+    if (accessToken) {
       fetchUser();
     } else {
-      setLoading(false);
+      tryRefreshToken();
     }
-  }, [token]);
+  }, []);
 
   const fetchUser = async () => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data.user);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      if (error.response?.status === 401) {
+        await tryRefreshToken();
+      } else {
+        logout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tryRefreshToken = async () => {
+    try {
+      const response = await api.post('/auth/refresh');
+      const newAccessToken = response.data.accessToken;
+      
+      localStorage.setItem('accessToken', newAccessToken);
+      setAccessToken(newAccessToken);
+      
+      // Fetch user with new token
+      const userResponse = await api.get('/auth/me');
+      setUser(userResponse.data.user);
+    } catch (error) {
       logout();
     } finally {
       setLoading(false);
     }
   };
 
-  const login = (token, userData) => {
-    localStorage.setItem('token', token);
-    setToken(token);
+  const login = (accessToken, userData) => {
+    localStorage.setItem('accessToken', accessToken);
+    setAccessToken(accessToken);
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('accessToken');
+      setAccessToken(null);
+      setUser(null);
+    }
   };
 
   const value = {

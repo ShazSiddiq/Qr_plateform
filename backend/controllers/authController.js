@@ -86,11 +86,19 @@ const handleEmailOtp = async (email) => {
     return otp;
 };
 
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
-  });
+// Generate tokens
+const generateTokens = (userId) => {
+  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, { expiresIn: '7d' });
+  return { accessToken, refreshToken };
+};
+
+// Set cookie options
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
 // @desc    Register new user
@@ -222,13 +230,16 @@ export const verifyOTP = async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    // Set refresh token in httpOnly cookie
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     res.json({
       success: true,
       message: 'Login successful',
-      token,
+      accessToken,
       user: {
         id: user._id,
         name: user.name,
@@ -270,13 +281,16 @@ export const login = async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    // Set refresh token in httpOnly cookie
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     res.json({
       success: true,
       message: 'Login successful',
-      token,
+      accessToken,
       user: {
         id: user._id,
         name: user.name,
@@ -284,6 +298,62 @@ export const login = async (req, res, next) => {
         phone: user.phone,
         role: user.role
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+// @access  Public
+export const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not found'
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Generate new access token
+    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+    res.json({
+      success: true,
+      accessToken
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid refresh token'
+    });
+  }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+export const logout = async (req, res, next) => {
+  try {
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken');
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
     });
   } catch (error) {
     next(error);
